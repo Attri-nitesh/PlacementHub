@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="28" fill="#121824"/>
+  <rect x="2" y="2" width="96" height="96" rx="26" stroke="white" stroke-opacity="0.1" stroke-width="2"/>
+  <!-- Abstract Node Grid -->
+  <path d="M30 65 L50 35 L70 65 Z" stroke="url(#grad1)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="50" cy="35" r="7" fill="url(#grad2)" />
+  <circle cx="30" cy="65" r="6" fill="#8B5CF6" />
+  <circle cx="70" cy="65" r="6" fill="#3B82F6" />
+  <path d="M50 35 L50 72" stroke="url(#grad2)" stroke-width="4" stroke-dasharray="2 4" stroke-linecap="round"/>
+  <circle cx="50" cy="72" r="4" fill="#10B981"/>
+</svg>

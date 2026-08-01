@@ -1,0 +1,28 @@
+{
+  "name": "placementhub-server",
+  "version": "1.0.0",
+  "description": "PlacementHub Backend API - Auth & Foundation",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/utils/seed.js"
+  },
+  "dependencies": {
+    "axios": "^1.19.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "google-auth-library": "^10.9.1",
+    "json2csv": "^6.0.0-alpha.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.3.1",
+    "multer": "^2.2.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

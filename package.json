@@ -1,0 +1,13 @@
+{
+  "name": "placementhub-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "backend": "npm --prefix backend run dev",
+    "frontend": "npm --prefix frontend run dev",
+    "server": "npm --prefix backend run dev",
+    "client": "npm --prefix frontend run dev",
+    "seed": "npm --prefix backend run seed",
+    "build:frontend": "npm --prefix frontend run build"
+  }
+}
