@@ -10,6 +10,7 @@ import DriveActionsManager from '../components/placement/DriveActionsManager';
 import ApplicationReviewModal from '../components/placement/ApplicationReviewModal';
 import ScheduleInterviewModal from '../components/placement/ScheduleInterviewModal';
 import OfferModal from '../components/placement/OfferModal';
+import RejectionModal from '../components/placement/RejectionModal';
 import AnnouncementModal from '../components/placement/AnnouncementModal';
 import PlacementAnalytics from '../components/placement/PlacementAnalytics';
 import NotificationsCenter from '../components/NotificationsCenter';
@@ -18,6 +19,8 @@ import {
   getPlacementDashboard,
   getCompanies,
   createCompany,
+  updateCompany,
+  deleteCompany,
   getPlacementDrives,
   createPlacementDrive,
   updatePlacementDrive,
@@ -106,6 +109,7 @@ const PlacementDashboard = () => {
 
   // Modals Control
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(null);
   const [driveModalOpen, setDriveModalOpen] = useState(false);
   const [editingDrive, setEditingDrive] = useState(null);
   const [previewDrive, setPreviewDrive] = useState(null);
@@ -113,6 +117,7 @@ const PlacementDashboard = () => {
   const [reviewAppModal, setReviewAppModal] = useState(null);
   const [scheduleInterviewModalApp, setScheduleInterviewModalApp] = useState(null);
   const [offerModalApp, setOfferModalApp] = useState(null);
+  const [rejectionModalApp, setRejectionModalApp] = useState(null);
 
   // Confirm Dialog Modal State
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -493,10 +498,30 @@ const PlacementDashboard = () => {
     });
   };
 
-  const handleCreateCompany = async (data) => {
-    await createCompany(data);
+  const handleSaveCompanyModal = async (payload, editId) => {
+    if (editId) {
+      await updateCompany(editId, payload);
+    } else {
+      await createCompany(payload);
+    }
     loadCompanies();
     loadDashboard();
+    setEditingCompany(null);
+  };
+
+  const handleDeleteCompany = (comp) => {
+    setConfirmDialog({
+      title: `Delete Corporate Partner?`,
+      message: `Are you sure you want to delete "${comp.name}"? This action CANNOT be undone.`,
+      confirmLabel: `🗑 Delete Partner`,
+      confirmClass: `bg-red-600 hover:bg-red-500 text-white font-bold`,
+      onConfirm: async () => {
+        await deleteCompany(comp._id);
+        loadCompanies();
+        loadDashboard();
+        setConfirmDialog(null);
+      },
+    });
   };
 
   const handleSaveDriveModal = async (payload, editId) => {
@@ -651,7 +676,10 @@ const PlacementDashboard = () => {
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Command Quick Actions</h4>
                   <div className="space-y-2">
                     <button
-                      onClick={() => setCompanyModalOpen(true)}
+                      onClick={() => {
+                        setEditingCompany(null);
+                        setCompanyModalOpen(true);
+                      }}
                       className="w-full p-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white transition-all text-left flex items-center justify-between"
                     >
                       <span>+ Onboard Corporate Partner</span>
@@ -719,7 +747,10 @@ const PlacementDashboard = () => {
                   <p className="text-xs text-slate-400">Onboard and manage active campus recruiting companies.</p>
                 </div>
                 <button
-                  onClick={() => setCompanyModalOpen(true)}
+                  onClick={() => {
+                    setEditingCompany(null);
+                    setCompanyModalOpen(true);
+                  }}
                   className="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-glow-violet transition-colors flex items-center space-x-2 shrink-0"
                 >
                   <Plus className="w-4 h-4" />
@@ -745,6 +776,27 @@ const PlacementDashboard = () => {
                             {comp.industry}
                           </span>
                         </div>
+                      </div>
+
+                      {/* EDIT & DELETE COMPANY ACTIONS */}
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingCompany(comp);
+                            setCompanyModalOpen(true);
+                          }}
+                          className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors border border-white/10"
+                          title="Edit Company Details"
+                        >
+                          <Edit className="w-3.5 h-3.5 text-violet-400" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCompany(comp)}
+                          className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors border border-red-500/20"
+                          title="Delete Corporate Partner"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
@@ -1208,7 +1260,15 @@ const PlacementDashboard = () => {
       </div>
 
       {/* Modals & Dialogs */}
-      <CompanyModal isOpen={companyModalOpen} onClose={() => setCompanyModalOpen(false)} onSave={handleCreateCompany} />
+      <CompanyModal
+        isOpen={companyModalOpen}
+        onClose={() => {
+          setCompanyModalOpen(false);
+          setEditingCompany(null);
+        }}
+        onSave={handleSaveCompanyModal}
+        initialCompany={editingCompany}
+      />
 
       <DriveModal
         isOpen={driveModalOpen}
@@ -1302,15 +1362,7 @@ const PlacementDashboard = () => {
         onStageUpdate={handleStageUpdate}
         onOpenScheduleInterview={(app) => setScheduleInterviewModalApp(app)}
         onOpenOfferModal={(app) => setOfferModalApp(app)}
-        onOpenRejectionModal={(app) => {
-          const reason = prompt('Enter rejection reason for candidate:');
-          if (reason) {
-            rejectApplication({ applicationId: app._id, reason, feedback: 'Keep preparing!' }).then(() => {
-              loadApps();
-              setReviewAppModal(null);
-            });
-          }
-        }}
+        onOpenRejectionModal={(app) => setRejectionModalApp(app)}
       />
 
       <ScheduleInterviewModal
@@ -1325,6 +1377,19 @@ const PlacementDashboard = () => {
         application={offerModalApp}
         onClose={() => setOfferModalApp(null)}
         onReleaseOffer={handleReleaseOffer}
+      />
+
+      {/* Professional Rejection Modal */}
+      <RejectionModal
+        isOpen={Boolean(rejectionModalApp)}
+        application={rejectionModalApp}
+        onClose={() => setRejectionModalApp(null)}
+        onRejectCandidate={async (data) => {
+          await rejectApplication(data);
+          loadApps();
+          loadDashboard();
+          setReviewAppModal(null);
+        }}
       />
     </div>
   );

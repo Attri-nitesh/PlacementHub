@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Building2, Globe, Mail, Phone, MapPin, Briefcase, Loader2 } from 'lucide-react';
+import { X, Building2, Globe, Mail, Phone, MapPin, Briefcase, Loader2, Edit } from 'lucide-react';
 
-const CompanyModal = ({ isOpen, onClose, onSave }) => {
+const CompanyModal = ({ isOpen, onClose, onSave, initialCompany = null }) => {
   const [name, setName] = useState('');
   const [logo, setLogo] = useState('');
   const [description, setDescription] = useState('');
@@ -14,27 +14,54 @@ const CompanyModal = ({ isOpen, onClose, onSave }) => {
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (initialCompany) {
+      setName(initialCompany.name || '');
+      setLogo(initialCompany.logo || '');
+      setDescription(initialCompany.description || '');
+      setWebsite(initialCompany.website || '');
+      setIndustry(initialCompany.industry || 'Information Technology');
+      setHrName(initialCompany.hrName || '');
+      setHrEmail(initialCompany.hrEmail || '');
+      setHrPhone(initialCompany.hrPhone || '');
+      setLocation(initialCompany.location || '');
+    } else {
+      setName('');
+      setLogo('');
+      setDescription('');
+      setWebsite('');
+      setIndustry('Information Technology');
+      setHrName('');
+      setHrEmail('');
+      setHrPhone('');
+      setLocation('');
+    }
+  }, [initialCompany, isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      await onSave({
-        name,
-        logo,
-        description,
-        website,
-        industry,
-        hrName,
-        hrEmail,
-        hrPhone,
-        location,
-        status: 'Active',
-      });
+      await onSave(
+        {
+          name,
+          logo,
+          description,
+          website,
+          industry,
+          hrName,
+          hrEmail,
+          hrPhone,
+          location,
+          status: 'Active',
+        },
+        initialCompany?._id
+      );
       onClose();
     } catch (err) {
-      alert('Failed to onboard company.');
+      alert(initialCompany ? 'Failed to update company.' : 'Failed to onboard company.');
     } finally {
       setLoading(false);
     }
@@ -51,8 +78,12 @@ const CompanyModal = ({ isOpen, onClose, onSave }) => {
         >
           <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-slate-900/60">
             <h3 className="text-base font-bold text-white flex items-center space-x-2">
-              <Building2 className="w-5 h-5 text-violet-400" />
-              <span>Onboard New Recruiting Company</span>
+              {initialCompany ? (
+                <Edit className="w-5 h-5 text-violet-400" />
+              ) : (
+                <Building2 className="w-5 h-5 text-violet-400" />
+              )}
+              <span>{initialCompany ? 'Edit Corporate Partner Details' : 'Onboard New Recruiting Company'}</span>
             </h3>
             <button
               onClick={onClose}
@@ -183,7 +214,11 @@ const CompanyModal = ({ isOpen, onClose, onSave }) => {
               type="submit"
               className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 font-bold text-xs text-white shadow-glow-violet transition-colors flex items-center justify-center space-x-2"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Onboard Corporate Partner</span>}
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <span>{initialCompany ? 'Save Company Changes' : 'Onboard Corporate Partner'}</span>
+              )}
             </button>
           </form>
         </motion.div>

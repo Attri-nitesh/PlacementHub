@@ -5,9 +5,11 @@ import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import AppRoutes from './routes/AppRoutes';
 
-const GOOGLE_CLIENT_ID =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  '1084224729482-exampleclientid.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+if (!GOOGLE_CLIENT_ID) {
+  throw new Error('VITE_GOOGLE_CLIENT_ID is missing');
+}
 
 function App() {
   return (

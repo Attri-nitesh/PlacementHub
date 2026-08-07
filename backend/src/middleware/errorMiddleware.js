@@ -26,7 +26,9 @@ const errorHandler = (err, req, res, next) => {
     error = { message, statusCode: 400 };
   }
 
-  res.status(error.statusCode || 500).json({
+  const statusCode = error.statusCode || err.statusCode || err.status || (err.response && err.response.status) || 500;
+
+  res.status(statusCode).json({
     success: false,
     message: error.message || 'Internal Server Error',
   });

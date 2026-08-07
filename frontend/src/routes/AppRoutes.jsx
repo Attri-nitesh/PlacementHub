@@ -24,6 +24,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Placement Cell Protected Dashboard */}
       <Route

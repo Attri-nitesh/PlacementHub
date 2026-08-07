@@ -17,6 +17,11 @@ const resumeSchema = new mongoose.Schema(
       enum: ['Verified', 'Pending', 'Action Needed'],
       default: 'Verified',
     },
+    // AI Resume Intelligence Ingestion Fields
+    parsedText: { type: String, default: '' },
+    resumeHash: { type: String, default: '' },
+    parsedAt: { type: Date },
+    resumeVersion: { type: Number, default: 1 },
   },
   { timestamps: true }
 );

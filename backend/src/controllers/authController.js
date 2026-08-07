@@ -143,13 +143,20 @@ const googleLogin = async (req, res, next) => {
         }
       }
     } else if (accessToken) {
-      const resInfo = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      email = resInfo.data.email;
-      name = resInfo.data.name;
-      googleId = resInfo.data.sub;
-      profilePicture = resInfo.data.picture;
+      try {
+        const resInfo = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        email = resInfo.data.email;
+        name = resInfo.data.name;
+        googleId = resInfo.data.sub;
+        profilePicture = resInfo.data.picture;
+      } catch (userinfoErr) {
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to verify Google access token. Please try signing in again.',
+        });
+      }
     } else {
       return res.status(400).json({
         success: false,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import Navbar from '../components/Navbar';
@@ -9,6 +10,7 @@ import ApplicationKanban from '../components/student/ApplicationKanban';
 import JobDetailsModal from '../components/student/JobDetailsModal';
 import NotificationsCenter from '../components/NotificationsCenter';
 import StudentAnalytics from '../components/student/StudentAnalytics';
+import EmailTrackingSettings from '../components/student/EmailTrackingSettings';
 import { ProjectModal, SkillModal } from '../components/student/Modals';
 
 import {
@@ -55,7 +57,15 @@ import {
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
   const { socket } = useSocket();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  const isSettingsPath = location.pathname === '/settings';
+  const initialTab = isSettingsPath
+    ? 'settings'
+    : searchParams.get('tab') || (searchParams.get('gmail') ? 'settings' : 'dashboard');
+
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // Profile & Score state
   const [profileData, setProfileData] = useState(null);
@@ -781,6 +791,7 @@ const StudentDashboard = () => {
           {/* TAB 9: SETTINGS */}
           {activeTab === 'settings' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <EmailTrackingSettings />
               <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 bg-slate-900/60 space-y-4">
                 <h3 className="text-lg font-bold text-white">Account & System Settings</h3>
                 <p className="text-xs text-slate-400">

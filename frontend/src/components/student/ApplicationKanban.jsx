@@ -115,12 +115,14 @@ const ApplicationKanban = () => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('application_updated', () => {
-      fetchFreshApps();
-    });
+    const handleUpdate = () => fetchFreshApps();
+
+    socket.on('application_updated', handleUpdate);
+    socket.on('application_created', handleUpdate);
 
     return () => {
-      socket.off('application_updated');
+      socket.off('application_updated', handleUpdate);
+      socket.off('application_created', handleUpdate);
     };
   }, [socket]);
 
@@ -225,7 +227,15 @@ const ApplicationKanban = () => {
                             </div>
                           )}
                           <div>
-                            <h4 className="font-bold text-white text-sm leading-snug">{app.companyName}</h4>
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="font-bold text-white text-sm leading-snug">{app.companyName}</h4>
+                              {app.autoTracked && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[9px] font-extrabold shrink-0" title="Automatically tracked via Gmail">
+                                  <Sparkles className="w-2.5 h-2.5 text-indigo-400" />
+                                  Auto-tracked
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-slate-400 font-medium">{app.roleTitle}</p>
                           </div>
                         </div>

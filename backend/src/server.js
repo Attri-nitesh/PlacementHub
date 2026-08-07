@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const app = require('./app');
+const { initGmailSyncJob } = require('./jobs/gmailSyncJob');
 
 // Load env vars
 dotenv.config();
@@ -47,6 +48,9 @@ app.set('io', io);
 
 server.listen(PORT, () => {
   console.log(`🚀 PlacementHub Backend Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode (Unified Socket.IO Engine)`);
+
+  // Initialize Automatic Gmail Sync Scheduler ONCE on server startup
+  initGmailSyncJob(io);
 });
 
 // Handle unhandled promise rejections

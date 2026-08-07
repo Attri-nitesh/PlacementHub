@@ -69,6 +69,11 @@ const ApplicationReviewModal = ({
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                     CGPA: {profile.cgpa || 8.5}
                   </span>
+                  {application.atsAnalysis && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 flex items-center space-x-1">
+                      <span>✨ ATS Match: {application.atsAnalysis.overallScore}%</span>
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-400 font-medium">
                   {profile.department || 'Computer Science'} &bull; Roll: {student.rollNumber || 'CS-2026-REG'}

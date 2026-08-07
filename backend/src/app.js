@@ -7,6 +7,8 @@ const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const placementRoutes = require('./routes/placementRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const emailRoutes = require('./routes/emailRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 const errorHandler = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -54,6 +56,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/placement', placementRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/email', emailRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Global Error Handler Middleware
 app.use(errorHandler);

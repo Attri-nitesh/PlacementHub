@@ -1,3 +1,4 @@
+const fs = require('fs');
 const Profile = require('../models/Profile');
 const Education = require('../models/Education');
 const Project = require('../models/Project');
@@ -9,7 +10,9 @@ const Application = require('../models/Application');
 const Notification = require('../models/Notification');
 const JobDrive = require('../models/JobDrive');
 const User = require('../models/User');
+const ResumeAnalysis = require('../models/ResumeAnalysis');
 const { createAndSendNotification } = require('../services/notificationService');
+const { parsePdfBuffer } = require('../services/pdfParserService');
 
 // Helper to calculate Profile Completion & Placement Readiness Score
 const calculateScores = async (userId) => {
@@ -376,6 +379,18 @@ const uploadResume = async (req, res, next) => {
 
     const fileUrl = `/uploads/resumes/${req.file.filename}`;
 
+    // Single-Pass PDF Parsing & SHA-256 Checksum Ingestion
+    let parsedText = '';
+    let resumeHash = '';
+    try {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const parsed = await parsePdfBuffer(fileBuffer);
+      parsedText = parsed.text;
+      resumeHash = parsed.hash;
+    } catch (parseErr) {
+      console.warn('Single-pass PDF ingestion warning:', parseErr.message);
+    }
+
     let resume = await Resume.findOne({ user: req.user._id });
     if (resume) {
       resume.fileName = req.file.originalname;
@@ -383,6 +398,10 @@ const uploadResume = async (req, res, next) => {
       resume.fileSize = req.file.size;
       resume.mimeType = req.file.mimetype;
       resume.status = 'Verified';
+      resume.parsedText = parsedText;
+      resume.resumeHash = resumeHash;
+      resume.parsedAt = new Date();
+      resume.resumeVersion = (resume.resumeVersion || 1) + 1;
       await resume.save();
     } else {
       resume = await Resume.create({
@@ -392,6 +411,10 @@ const uploadResume = async (req, res, next) => {
         fileSize: req.file.size,
         mimeType: req.file.mimetype,
         status: 'Verified',
+        parsedText,
+        resumeHash,
+        parsedAt: new Date(),
+        resumeVersion: 1,
       });
     }
 
@@ -453,6 +476,20 @@ const createApplication = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'You have already applied for this position.' });
     }
 
+    // Attach AI Resume Intelligence atsAnalysis snapshot if pre-analyzed
+    let atsAnalysisSnapshot = null;
+    if (jobDriveId) {
+      const preAnalysis = await ResumeAnalysis.findOne({ user: req.user._id, jobDrive: jobDriveId });
+      if (preAnalysis && preAnalysis.atsAnalysis) {
+        atsAnalysisSnapshot = {
+          schemaVersion: preAnalysis.schemaVersion || '1.0',
+          resumeHash: preAnalysis.resumeHash,
+          resumeVersion: preAnalysis.resumeVersion || 1,
+          ...preAnalysis.atsAnalysis.toObject(),
+        };
+      }
+    }
+
     const application = await Application.create({
       user: req.user._id,
       jobDrive: jobDriveId || null,
@@ -463,6 +500,7 @@ const createApplication = async (req, res, next) => {
       location,
       deadline,
       stage: 'Applied',
+      atsAnalysis: atsAnalysisSnapshot,
       timeline: [
         {
           stage: 'Applied',
