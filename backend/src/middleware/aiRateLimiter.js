@@ -10,6 +10,7 @@ const aiRateLimiter = rateLimit({
   keyGenerator: (req) => {
     return req.user ? req.user._id.toString() : req.ip;
   },
+  validate: false,
   message: {
     success: false,
     message: 'Too many AI ATS analysis requests. Please wait 15 minutes before trying again.',

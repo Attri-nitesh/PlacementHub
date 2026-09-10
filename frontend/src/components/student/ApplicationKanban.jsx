@@ -340,7 +340,6 @@ const ApplicationKanban = () => {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div className="p-6 overflow-y-auto space-y-4 text-xs">
                 {selectedTimelineApp.timeline?.length > 0 ? (
                   <div className="relative pl-6 space-y-6 border-l-2 border-white/10">

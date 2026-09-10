@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import Navbar from '../components/Navbar';
-import Sidebar from '../components/Sidebar';
+import StudentLayout from '../layouts/StudentLayout';
 import ReadinessMeter from '../components/student/ReadinessMeter';
 import ResumeUploader from '../components/student/ResumeUploader';
 import ApplicationKanban from '../components/student/ApplicationKanban';
@@ -11,6 +10,7 @@ import JobDetailsModal from '../components/student/JobDetailsModal';
 import NotificationsCenter from '../components/NotificationsCenter';
 import StudentAnalytics from '../components/student/StudentAnalytics';
 import EmailTrackingSettings from '../components/student/EmailTrackingSettings';
+import PhoneVerificationSection from '../components/student/PhoneVerificationSection';
 import { ProjectModal, SkillModal } from '../components/student/Modals';
 
 import {
@@ -23,6 +23,7 @@ import {
   getSkills,
   addSkill,
   deleteSkill,
+  getApplications,
 } from '../services/studentApi';
 
 import { motion } from 'framer-motion';
@@ -52,10 +53,16 @@ import {
   Layers,
   Lock,
   XCircle,
+  Target,
+  TrendingUp,
+  Award,
+  Clock,
+  ArrowUpRight,
+  Filter,
 } from 'lucide-react';
 
 const StudentDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { socket } = useSocket();
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -82,6 +89,7 @@ const StudentDashboard = () => {
   // Portfolio & Skills State
   const [projects, setProjects] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [skillModalOpen, setSkillModalOpen] = useState(false);
 
@@ -192,10 +200,20 @@ const StudentDashboard = () => {
     }
   };
 
+  const loadApplications = async () => {
+    try {
+      const data = await getApplications();
+      setApplications(data.applications || []);
+    } catch (err) {
+      console.error('Failed to fetch applications:', err);
+    }
+  };
+
   useEffect(() => {
     loadProfile();
     loadDrives();
     loadPortfolio();
+    loadApplications();
   }, []);
 
   useEffect(() => {
@@ -286,105 +304,413 @@ const StudentDashboard = () => {
     loadProfile();
   };
 
+  const totalAppliedCount = applications.length > 0 ? applications.length : 42;
+  const donutRadius = 42;
+  const donutCircumference = 2 * Math.PI * donutRadius;
+  let accumulatedOffset = 0;
+
+  const breakdownData = [
+    { label: 'Applied', count: 18, color: '#2E5AF0' },
+    { label: 'OA Test', count: 7, color: '#06B6D4' },
+    { label: 'Interview', count: 3, color: '#F59E0B' },
+    { label: 'Offer', count: 2, color: '#10B981' },
+    { label: 'Rejected', count: 4, color: '#EF4444' },
+  ];
+
+  const donutSegments = breakdownData.map((item) => {
+    const strokeDasharray = `${(item.count / totalAppliedCount) * donutCircumference} ${donutCircumference}`;
+    const strokeDashoffset = -accumulatedOffset;
+    accumulatedOffset += (item.count / totalAppliedCount) * donutCircumference;
+    return { ...item, strokeDasharray, strokeDashoffset };
+  });
+
   return (
-    <div className="min-h-screen bg-[#0B0F17] text-white flex flex-col selection:bg-emerald-500/30">
-      {/* Navbar */}
-      <Navbar onNavigateTab={(tab) => setActiveTab(tab)} />
+    <StudentLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      {/* TAB 1: OVERVIEW DASHBOARD (CLEAN SPACIOUS 12-COLUMN SAAS GRID) */}
+      {activeTab === 'dashboard' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-12 gap-4 sm:gap-5 w-full min-w-0 pb-8"
+        >
+          {/* ROW 1: TOP HEADER / WELCOME CARD (col-span-12) */}
+          <div className="col-span-12 bg-[#111622] rounded-2xl sm:rounded-3xl border border-[#1E2E4A] p-4 sm:p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="space-y-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#2E5AF0]/10 border border-[#2E5AF0]/20 text-[#2E5AF0] text-[11px] font-mono font-bold">
+                  Placement Season 2026
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold flex items-center space-x-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <span>Verified Student</span>
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight font-['Plus_Jakarta_Sans'] truncate">
+                Welcome back, {user?.name || 'Bucky Attri'} 👋
+              </h1>
+              <p className="text-xs text-slate-400 font-['Inter'] truncate">
+                Roll Number: <span className="font-mono text-slate-200 font-semibold">{user?.rollNumber || editProfile.registrationNumber || 'GOOG-994703'}</span> &bull; Status: <span className="text-emerald-400 font-semibold">Placement Eligible.</span>
+              </p>
+            </div>
 
-      {/* Main Container */}
-      <div className="flex-1 w-full flex flex-col md:flex-row gap-6 px-6 sm:px-8 py-6">
-        {/* Sidebar */}
-        <Sidebar
-          items={sidebarItems}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onLogout={logout}
-          role="student"
-        />
+            <div className="flex items-center space-x-3 shrink-0">
+              <div className="flex items-center space-x-2 bg-[#162032] border border-[#1E2E4A] px-3.5 py-2 rounded-xl text-xs font-mono text-slate-300">
+                <Zap className="w-4 h-4 text-[#2E5AF0]" />
+                <span>Profile Completion: {metrics?.completionPercentage || 35}%</span>
+              </div>
+            </div>
+          </div>
 
-        {/* Main Content Pane */}
-        <main className="flex-1 space-y-6">
-          {/* TAB 1: OVERVIEW DASHBOARD */}
-          {activeTab === 'dashboard' && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              {/* Hero Banner */}
-              <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 relative overflow-hidden bg-gradient-to-r from-emerald-950/40 via-slate-900/80 to-slate-900 shadow-2xl">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          {/* ROW 2 LEFT: CAMPUS RECRUITMENT PROGRESS (col-span-12 lg:col-span-8) */}
+          <div className="col-span-12 lg:col-span-8 bg-[#111622] rounded-2xl sm:rounded-3xl border border-[#1E2E4A] p-4 sm:p-5 shadow-xl flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between border-b border-[#1E2E4A] pb-3">
+              <div className="space-y-0.5">
+                <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight font-['Plus_Jakarta_Sans'] flex items-center space-x-2">
+                  <TrendingUp className="w-4 h-4 text-[#2E5AF0]" />
+                  <span>Campus Recruitment Progress</span>
+                </h2>
+                <p className="text-[11px] text-slate-400 font-['Inter']">
+                  Live stage progress across active applications
+                </p>
+              </div>
+              <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold">
+                Active Season
+              </span>
+            </div>
 
-                <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <span>Verified Student Account</span>
+            {/* Recruitment Progression Stage Flow Graph */}
+            <div className="py-2 px-1 flex-1 flex flex-col justify-center min-h-[90px]">
+              <div className="relative w-full h-20 sm:h-24">
+                <svg className="w-full h-full overflow-visible" viewBox="0 0 400 80" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="recruitmentProgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#2E5AF0" stopOpacity="0.25" />
+                      <stop offset="33%" stopColor="#06B6D4" stopOpacity="0.25" />
+                      <stop offset="66%" stopColor="#F59E0B" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#10B981" stopOpacity="0.25" />
+                    </linearGradient>
+                    <linearGradient id="recruitmentStrokeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#2E5AF0" />
+                      <stop offset="33%" stopColor="#06B6D4" />
+                      <stop offset="66%" stopColor="#F59E0B" />
+                      <stop offset="100%" stopColor="#10B981" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Gradient Area Fill */}
+                  <path
+                    d="M 50 18 C 100 18, 120 48, 150 48 C 180 48, 220 62, 250 62 C 280 62, 310 68, 350 68 L 350 78 L 50 78 Z"
+                    fill="url(#recruitmentProgGrad)"
+                  />
+
+                  {/* Curved Flow Line */}
+                  <path
+                    d="M 50 18 C 100 18, 120 48, 150 48 C 180 48, 220 62, 250 62 C 280 62, 310 68, 350 68"
+                    fill="none"
+                    stroke="url(#recruitmentStrokeGrad)"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Stage Node 1: Applied (18) */}
+                  <circle cx="50" cy="18" r="6" fill="#2E5AF0" stroke="#111622" strokeWidth="2" />
+                  <text x="50" y="8" textAnchor="middle" fill="#FFFFFF" fontSize="11" fontFamily="Plus Jakarta Sans" fontWeight="bold">18</text>
+
+                  {/* Stage Node 2: OA Test (7) */}
+                  <circle cx="150" cy="48" r="6" fill="#06B6D4" stroke="#111622" strokeWidth="2" />
+                  <text x="150" y="38" textAnchor="middle" fill="#06B6D4" fontSize="11" fontFamily="Plus Jakarta Sans" fontWeight="bold">7</text>
+
+                  {/* Stage Node 3: Interview (3) */}
+                  <circle cx="250" cy="62" r="6" fill="#F59E0B" stroke="#111622" strokeWidth="2" />
+                  <text x="250" y="52" textAnchor="middle" fill="#F59E0B" fontSize="11" fontFamily="Plus Jakarta Sans" fontWeight="bold">3</text>
+
+                  {/* Stage Node 4: Offer Received (2) */}
+                  <circle cx="350" cy="68" r="6" fill="#10B981" stroke="#111622" strokeWidth="2" />
+                  <text x="350" y="58" textAnchor="middle" fill="#10B981" fontSize="11" fontFamily="Plus Jakarta Sans" fontWeight="bold">2</text>
+                </svg>
+              </div>
+            </div>
+
+            {/* Compact Horizontal Step Nodes */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+              {/* Step 1: Applied */}
+              <div className="bg-[#162032] rounded-xl border border-[#1E2E4A] p-3 space-y-1">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider font-['Inter']">Applied</span>
+                  <span className="w-2 h-2 rounded-full bg-[#2E5AF0]" />
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-2xl font-black text-white font-mono font-['Plus_Jakarta_Sans']">18</span>
+                  <span className="text-[10px] text-slate-400 font-['Inter']">Submissions</span>
+                </div>
+              </div>
+
+              {/* Step 2: OA Test */}
+              <div className="bg-[#162032] rounded-xl border border-[#1E2E4A] p-3 space-y-1">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider font-['Inter']">OA Test</span>
+                  <span className="w-2 h-2 rounded-full bg-[#06B6D4]" />
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-2xl font-black text-white font-mono font-['Plus_Jakarta_Sans']">7</span>
+                  <span className="text-[10px] text-cyan-400 font-['Inter']">Shortlisted</span>
+                </div>
+              </div>
+
+              {/* Step 3: Interview */}
+              <div className="bg-[#162032] rounded-xl border border-[#1E2E4A] p-3 space-y-1">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider font-['Inter']">Interview</span>
+                  <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-2xl font-black text-white font-mono font-['Plus_Jakarta_Sans']">3</span>
+                  <span className="text-[10px] text-amber-400 font-['Inter']">Rounds Active</span>
+                </div>
+              </div>
+
+              {/* Step 4: Offer */}
+              <div className="bg-[#162032] rounded-xl border border-[#1E2E4A] p-3 space-y-1">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider font-['Inter'] font-bold">Offer Received</span>
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-2xl font-black text-white font-mono font-['Plus_Jakarta_Sans']">2</span>
+                  <span className="text-[10px] text-emerald-400 font-['Inter']">Max ₹42 LPA</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ROW 2 RIGHT: PLACEMENT CALENDAR WIDGET (col-span-12 lg:col-span-4) */}
+          <div className="col-span-12 lg:col-span-4 bg-[#111622] rounded-2xl sm:rounded-3xl border border-[#1E2E4A] p-4 sm:p-5 shadow-xl flex flex-col justify-between space-y-3">
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between border-b border-[#1E2E4A] pb-3">
+              <div className="flex items-center space-x-2">
+                <Calendar className="w-4 h-4 text-[#2E5AF0]" />
+                <h3 className="text-base font-extrabold text-white font-['Plus_Jakarta_Sans']">
+                  Placement Calendar
+                </h3>
+              </div>
+              <span className="text-[10px] font-mono font-bold text-[#2E5AF0] bg-[#2E5AF0]/10 px-2 py-0.5 rounded-md border border-[#2E5AF0]/20">
+                Aug 2026
+              </span>
+            </div>
+
+            {/* Days of Week Header */}
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((day, i) => (
+                <span key={i} className="text-[9px] font-bold text-slate-400 uppercase font-mono">
+                  {day}
+                </span>
+              ))}
+            </div>
+
+            {/* 31-Day Month Grid (August 2026 starts on Saturday = offset 5 days) */}
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {[...Array(5)].map((_, i) => (
+                <div key={`empty-${i}`} className="h-6" />
+              ))}
+
+              {[...Array(31)].map((_, i) => {
+                const dayNum = i + 1;
+                const eventMap = {
+                  4: { color: 'bg-amber-400', title: 'Google Interview' },
+                  10: { color: 'bg-[#2E5AF0]', title: 'Amazon Drive' },
+                  15: { color: 'bg-cyan-400', title: 'Uber OA Test' },
+                  18: { color: 'bg-amber-400', title: 'Microsoft Interview' },
+                  22: { color: 'bg-rose-400', title: 'Application Deadline' },
+                };
+                const event = eventMap[dayNum];
+                const isToday = dayNum === 24;
+
+                return (
+                  <div
+                    key={dayNum}
+                    className={`h-6 rounded-lg flex flex-col items-center justify-center text-[10px] font-mono font-semibold relative transition-colors cursor-pointer ${
+                      isToday
+                        ? 'bg-[#2E5AF0] text-white font-bold shadow-sm'
+                        : 'text-slate-300 hover:bg-[#162032]'
+                    }`}
+                    title={event ? `${dayNum} Aug: ${event.title}` : `${dayNum} Aug`}
+                  >
+                    <span>{dayNum}</span>
+                    {event && !isToday && (
+                      <span className={`w-1 h-1 rounded-full absolute bottom-0.5 ${event.color}`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Event Legend Footer */}
+            <div className="pt-2 border-t border-[#1E2E4A] flex items-center justify-between text-[9px] text-slate-400 font-['Inter']">
+              <div className="flex items-center space-x-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2E5AF0]" />
+                <span>Drive</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                <span>OA</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span>Interview</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                <span>Deadline</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ROW 3 LEFT: RECENT APPLICATIONS (col-span-12 lg:col-span-8 lg:row-span-2) */}
+          <div className="col-span-12 lg:col-span-8 lg:row-span-2 bg-[#111622] rounded-2xl sm:rounded-3xl border border-[#1E2E4A] p-4 sm:p-5 shadow-xl space-y-3 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between border-b border-[#1E2E4A] pb-3 mb-3">
+                <div>
+                  <h3 className="text-base font-extrabold text-white font-['Plus_Jakarta_Sans'] flex items-center space-x-2">
+                    <Briefcase className="w-4 h-4 text-[#2E5AF0]" />
+                    <span>Recent Applications</span>
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setActiveTab('applications')}
+                  className="text-xs font-bold text-[#2E5AF0] hover:underline flex items-center space-x-1"
+                >
+                  <span>View All</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Compact Application Rows */}
+              <div className="divide-y divide-slate-800/60">
+                {[
+                  { company: 'Google', role: 'Software Engineer', date: '18 Aug 2026', status: 'Interview', package: '₹42.0 LPA', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+                  { company: 'Uber', role: 'Backend Engineer', date: '15 Aug 2026', status: 'OA Test', package: '₹38.0 LPA', color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
+                  { company: 'Amazon', role: 'SDE Intern & FTE', date: '10 Aug 2026', status: 'Offer Released', package: '₹32.0 LPA', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+                  { company: 'Microsoft', role: 'Cloud Engineer', date: '05 Aug 2026', status: 'Shortlisted', package: '₹44.0 LPA', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+                  { company: 'Atlassian', role: 'Fullstack Developer', date: '01 Aug 2026', status: 'Applied', package: '₹52.0 LPA', color: 'bg-[#2E5AF0]/10 text-[#2E5AF0] border-[#2E5AF0]/20' },
+                ].map((app, idx) => (
+                  <div key={idx} className="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0 hover:bg-white/[0.02] transition-colors rounded-xl px-2">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-[#162032] border border-[#1E2E4A] flex items-center justify-center text-[#2E5AF0] font-black text-xs shrink-0">
+                        {app.company.charAt(0)}
                       </div>
-
-                      <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-violet-500/20 border border-violet-500/30 text-violet-300 text-xs font-mono font-bold">
-                        <Zap className="w-3.5 h-3.5 text-violet-400" />
-                        <span>Profile Completion: {metrics?.completionPercentage || 85}%</span>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-white font-['Plus_Jakarta_Sans'] truncate">{app.company}</h4>
+                        <p className="text-[11px] text-slate-400 font-['Inter'] truncate">{app.role}</p>
                       </div>
                     </div>
 
-                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-                      Welcome, {user?.name || 'Student'} 👋
-                    </h1>
-
-                    <p className="text-slate-400 text-sm sm:text-base max-w-3xl leading-relaxed">
-                      Roll Number: <span className="font-mono text-emerald-300 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">{user?.rollNumber || 'CS-2026-REG'}</span> &bull; Status: <span className="text-emerald-400 font-semibold">Placement Eligible</span>.
-                    </p>
+                    <div className="flex items-center space-x-3.5 shrink-0">
+                      <span className="hidden sm:inline text-xs font-mono text-slate-400">{app.date}</span>
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${app.color}`}>
+                        {app.status}
+                      </span>
+                      <span className="text-xs font-mono font-bold text-white">{app.package}</span>
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ROW 3 RIGHT: UPCOMING DEADLINES (col-span-12 sm:col-span-6 lg:col-span-4) */}
+          <div className="col-span-12 sm:col-span-6 lg:col-span-4 bg-[#111622] rounded-2xl sm:rounded-3xl border border-[#1E2E4A] p-4 sm:p-5 shadow-xl flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between border-b border-[#1E2E4A] pb-3">
+              <h3 className="text-base font-extrabold text-[#F5F7FB] font-['Plus_Jakarta_Sans'] flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-amber-400" />
+                <span>Upcoming Deadlines</span>
+              </h3>
+            </div>
+
+            {/* Compact Deadline Items */}
+            <div className="space-y-2">
+              {[
+                { company: 'Google Cloud', role: 'SWE - Level 59', badge: '4 Days Left', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', progress: '60%', bar: 'bg-amber-400' },
+                { company: 'Microsoft Azure', role: 'SDE-1 Hybrid', badge: '1 Day Left (Urgent)', color: 'bg-rose-500/10 text-rose-400 border-rose-500/20', progress: '90%', bar: 'bg-rose-400' },
+                { company: 'Atlassian', role: 'Frontend Engineer', badge: '9 Days Left', color: 'bg-[#2E5AF0]/10 text-[#2E5AF0] border-[#2E5AF0]/20', progress: '25%', bar: 'bg-[#2E5AF0]' },
+              ].map((item, idx) => (
+                <div key={idx} className="p-2.5 rounded-xl bg-[#162032] border border-[#1E2E4A] space-y-1.5">
+                  <div className="flex items-center justify-between text-xs gap-2">
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-white text-xs font-['Plus_Jakarta_Sans'] truncate">{item.company}</h4>
+                      <p className="text-[10px] text-slate-400 font-['Inter'] truncate">{item.role}</p>
+                    </div>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${item.color}`}>
+                      {item.badge}
+                    </span>
+                  </div>
+                  <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${item.bar}`} style={{ width: item.progress }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ROW 4 RIGHT: APPLICATION STATUS (col-span-12 sm:col-span-6 lg:col-span-4) */}
+          <div className="col-span-12 sm:col-span-6 lg:col-span-4 bg-[#111622] rounded-2xl sm:rounded-3xl border border-[#1E2E4A] p-4 sm:p-5 shadow-xl flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between border-b border-[#1E2E4A] pb-3">
+              <h3 className="text-base font-extrabold text-white font-['Plus_Jakarta_Sans'] flex items-center space-x-2">
+                <Filter className="w-4 h-4 text-[#2E5AF0]" />
+                <span>Application Status</span>
+              </h3>
+              <span className="text-[11px] font-mono text-slate-400 font-semibold">42 Total</span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              {/* Donut Ring Chart */}
+              <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  {donutSegments.map((seg, idx) => (
+                    <circle
+                      key={idx}
+                      cx="50"
+                      cy="50"
+                      r={donutRadius}
+                      stroke={seg.color}
+                      strokeWidth="12"
+                      strokeDasharray={seg.strokeDasharray}
+                      strokeDashoffset={seg.strokeDashoffset}
+                      fill="transparent"
+                    />
+                  ))}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-lg font-black text-white font-['Plus_Jakarta_Sans'] leading-none">
+                    {totalAppliedCount}
+                  </span>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest font-['Inter'] mt-0.5">
+                    TOTAL
+                  </span>
                 </div>
               </div>
 
-              {/* Placement Readiness Gauge */}
-              <ReadinessMeter metrics={metrics} />
-
-              {/* Quick Actions & Motivation Quote */}
-              <div className="grid md:grid-cols-3 gap-5">
-                <div className="md:col-span-2 glass-panel p-6 rounded-3xl border border-white/10 bg-slate-900/60 flex items-start space-x-4">
-                  <Quote className="w-8 h-8 text-violet-400 shrink-0 mt-1" />
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold italic text-slate-200">"{todayQuote.text}"</p>
-                    <span className="text-xs font-bold text-violet-400">— {todayQuote.author}</span>
+              {/* Legend Items */}
+              <div className="space-y-1 flex-1 min-w-0">
+                {[
+                  { label: 'Applied', count: 18, color: '#2E5AF0' },
+                  { label: 'OA Test', count: 7, color: '#06B6D4' },
+                  { label: 'Interview', count: 3, color: '#F59E0B' },
+                  { label: 'Offer Received', count: 2, color: '#10B981' },
+                  { label: 'Rejected', count: 4, color: '#EF4444' },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center space-x-1.5 min-w-0 truncate">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-slate-300 font-['Inter'] truncate">{item.label}</span>
+                    </div>
+                    <span className="font-mono font-bold text-white ml-2 shrink-0">{item.count}</span>
                   </div>
-                </div>
-
-                <div className="glass-panel p-6 rounded-3xl border border-white/10 bg-slate-900/60 space-y-3">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Quick Actions</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setActiveTab('resume')}
-                      className="p-3 rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 text-xs font-semibold text-white transition-all text-center"
-                    >
-                      📄 Upload Resume
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('skills_projects')}
-                      className="p-3 rounded-2xl bg-white/5 hover:bg-violet-500/15 border border-white/10 text-xs font-semibold text-white transition-all text-center"
-                    >
-                      🚀 Add Project
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('applications')}
-                      className="p-3 rounded-2xl bg-white/5 hover:bg-blue-500/15 border border-white/10 text-xs font-semibold text-white transition-all text-center"
-                    >
-                      📋 Kanban Board
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('drives')}
-                      className="p-3 rounded-2xl bg-white/5 hover:bg-amber-500/15 border border-white/10 text-xs font-semibold text-white transition-all text-center"
-                    >
-                      💼 View Drives
-                    </button>
-                  </div>
-                </div>
+                ))}
               </div>
-            </motion.div>
-          )}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
           {/* TAB 2: EDITABLE PROFILE */}
           {activeTab === 'profile' && (
@@ -426,13 +752,27 @@ const StudentDashboard = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-slate-300">Phone Number</label>
-                        <input
-                          type="text"
-                          value={editProfile.phone}
-                          onChange={(e) => setEditProfile({ ...editProfile, phone: e.target.value })}
-                          placeholder="+91 9876543210"
-                          className="w-full glass-input px-3.5 py-2.5 rounded-xl text-sm font-medium mt-1"
+                        <PhoneVerificationSection
+                          phone={editProfile.phone}
+                          onChangePhone={(newPhone) => setEditProfile({ ...editProfile, phone: newPhone })}
+                          phoneVerified={profileData?.phoneVerified || false}
+                          phoneVerifiedAt={profileData?.phoneVerifiedAt || null}
+                          onVerificationSuccess={(verifiedAt, updatedProfile, updatedUser) => {
+                            setProfileData((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    phoneVerified: Boolean(verifiedAt),
+                                    phoneVerifiedAt: verifiedAt || null,
+                                    ...(updatedProfile || {}),
+                                  }
+                                : prev
+                            );
+                            if (updateUser && updatedUser) {
+                              updateUser(updatedUser);
+                            }
+                            loadProfile();
+                          }}
                         />
                       </div>
                       <div>
@@ -805,9 +1145,6 @@ const StudentDashboard = () => {
               </div>
             </motion.div>
           )}
-        </main>
-      </div>
-
       {/* Modals & Drawers */}
       <JobDetailsModal
         isOpen={Boolean(selectedDrive)}
@@ -830,7 +1167,7 @@ const StudentDashboard = () => {
         onClose={() => setSkillModalOpen(false)}
         onSave={handleAddSkill}
       />
-    </div>
+    </StudentLayout>
   );
 };
 

@@ -38,14 +38,20 @@ const {
   markNotificationRead,
   deleteNotification,
   getStudentAnalytics,
+  sendPhoneOtp,
+  verifyPhoneOtp,
+  getPhoneStatus,
 } = require('../controllers/studentController');
 
 // All routes require authenticated student role
 router.use(authenticateUser);
 router.use(authorizeStudent);
 
-// Profile
+// Profile & Phone Verification
 router.route('/profile').get(getStudentProfile).put(updateStudentProfile);
+router.route('/send-phone-otp').post(sendPhoneOtp);
+router.route('/verify-phone-otp').post(verifyPhoneOtp);
+router.route('/phone-status').get(getPhoneStatus);
 
 // Education
 router.route('/education').get(getEducation).post(createEducation);

@@ -130,7 +130,13 @@ const ApplicationReviewModal = ({
 
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => setPdfPreviewOpen(true)}
+                    onClick={() => {
+                      if (!resume?.fileUrl) return;
+                      const fullUrl = resume.fileUrl.startsWith('http')
+                        ? resume.fileUrl
+                        : `http://localhost:5001${resume.fileUrl}`;
+                      window.open(fullUrl, '_blank', 'noopener,noreferrer');
+                    }}
                     className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white flex items-center space-x-1"
                   >
                     <Eye className="w-4 h-4 text-violet-400" />
@@ -286,23 +292,6 @@ const ApplicationReviewModal = ({
         </motion.div>
       </div>
 
-      {/* Embedded PDF Modal */}
-      {pdfPreviewOpen && resume && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="glass-panel w-full max-w-4xl h-[85vh] rounded-3xl border border-white/10 overflow-hidden flex flex-col bg-[#0B0F17]">
-            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-slate-900/60">
-              <span className="font-bold text-white text-sm">{resume.fileName}</span>
-              <button
-                onClick={() => setPdfPreviewOpen(false)}
-                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <iframe src={`http://localhost:5001${resume.fileUrl}`} title="Resume PDF" className="w-full flex-1 bg-white" />
-          </div>
-        </div>
-      )}
     </AnimatePresence>
   );
 };

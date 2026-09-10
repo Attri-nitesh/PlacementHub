@@ -176,3 +176,19 @@ export const getStudentAnalytics = async () => {
   const response = await api.get('/student/analytics');
   return response.data;
 };
+
+// Enterprise Phone OTP Verification API
+export const sendPhoneOtp = async (phone) => {
+  const response = await api.post('/student/send-phone-otp', { phone });
+  return response.data;
+};
+
+export const verifyPhoneOtp = async (phone, otp) => {
+  const response = await api.post('/student/verify-phone-otp', { phone, otp });
+  return response.data;
+};
+
+export const getPhoneStatus = async () => {
+  const response = await api.get('/student/phone-status');
+  return response.data;
+};

@@ -41,6 +41,7 @@ const LoginPage = () => {
     if (isAuthenticated && user) {
       if (user.role === 'student') navigate('/student/dashboard', { replace: true });
       else if (user.role === 'placement') navigate('/placement/dashboard', { replace: true });
+      else if (user.role === 'admin' || user.role === 'superadmin') navigate('/admin/dashboard', { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -58,7 +59,8 @@ const LoginPage = () => {
       const res = await login(email, password, role);
       if (res.success && res.user) {
         if (res.user.role === 'student') navigate('/student/dashboard');
-        else navigate('/placement/dashboard');
+        else if (res.user.role === 'placement') navigate('/placement/dashboard');
+        else if (res.user.role === 'admin' || res.user.role === 'superadmin') navigate('/admin/dashboard');
       }
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
@@ -80,6 +82,7 @@ const LoginPage = () => {
         // Returning User: Role already saved in MongoDB -> Redirect directly
         if (res.user.role === 'student') navigate('/student/dashboard');
         else if (res.user.role === 'placement') navigate('/placement/dashboard');
+        else if (res.user.role === 'admin' || res.user.role === 'superadmin') navigate('/admin/dashboard');
       }
     } catch (err) {
       setError(err.message || 'Google Authentication failed.');
@@ -352,18 +355,29 @@ const LoginPage = () => {
               </form>
             </motion.div>
 
-            {/* Registration link for Students */}
-            {role === 'student' && (
-              <div className="text-center text-xs text-slate-400">
-                Don't have a student account?{' '}
+            {/* Registration link for Students & Admin portal link */}
+            <div className="text-center text-xs text-slate-400 space-y-2">
+              {role === 'student' && (
+                <div>
+                  Don't have a student account?{' '}
+                  <Link
+                    to="/register"
+                    className="font-semibold text-emerald-400 hover:text-emerald-300 underline underline-offset-4 transition-colors"
+                  >
+                    Register as Student
+                  </Link>
+                </div>
+              )}
+              <div>
+                Super Administrator?{' '}
                 <Link
-                  to="/register"
-                  className="font-semibold text-emerald-400 hover:text-emerald-300 underline underline-offset-4 transition-colors"
+                  to="/admin/login"
+                  className="font-semibold text-rose-400 hover:text-rose-300 underline underline-offset-4 transition-colors"
                 >
-                  Register as Student
+                  Access Admin Portal
                 </Link>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

@@ -36,9 +36,32 @@ const seedData = async () => {
         role: 'student',
         authProvider: 'local',
       });
-      console.log('✅ Default Student account created: john@student.edu / student123password');
-    } else {
       console.log('ℹ️ Student account exists: john@student.edu');
+    }
+
+    // 3. Super Admin Demo Account
+    const existingAdminCom = await User.findOne({ email: 'admin@placementhub.com' });
+    if (!existingAdminCom) {
+      await User.create({
+        name: 'Super Administrator',
+        email: 'admin@placementhub.com',
+        password: 'Admin@123',
+        role: 'admin',
+        authProvider: 'local',
+      });
+      console.log('✅ Default Super Admin account created: admin@placementhub.com / Admin@123');
+    }
+
+    const existingAdmin = await User.findOne({ email: 'admin@placementhub.edu' });
+    if (!existingAdmin) {
+      await User.create({
+        name: 'Super System Administrator',
+        email: 'admin@placementhub.edu',
+        password: 'admin123password',
+        role: 'admin',
+        authProvider: 'local',
+      });
+      console.log('✅ Default Super Admin account created: admin@placementhub.edu / admin123password');
     }
 
     console.log('[Seed] Database seeding completed successfully.');

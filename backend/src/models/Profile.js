@@ -10,6 +10,16 @@ const profileSchema = new mongoose.Schema(
     },
     // Personal Information
     phone: { type: String, trim: true },
+    phoneVerified: { type: Boolean, default: false },
+    phoneVerifiedAt: { type: Date, default: null },
+    phoneOtp: {
+      hash: { type: String, select: false },
+      expiresAt: { type: Date },
+      attempts: { type: Number, default: 0 },
+      lastSentAt: { type: Date },
+      sendCountHour: { type: Number, default: 0 },
+      hourWindowStart: { type: Date },
+    },
     dob: { type: Date },
     gender: { type: String, enum: ['Male', 'Female', 'Other', 'Prefer not to say'] },
     address: { type: String, trim: true },

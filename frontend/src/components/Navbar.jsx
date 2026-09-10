@@ -114,24 +114,31 @@ const Navbar = ({ onNavigateTab }) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#0B0F17] border-b border-slate-800 px-6 sm:px-8 py-3.5 shadow-md">
+    <header className="sticky top-0 z-40 w-full bg-[#0B0F17] border-b border-[#1E2E4A] px-6 sm:px-8 py-3.5 shadow-md h-[72px] flex items-center">
       <div className="w-full flex items-center justify-between">
         {/* Brand Logo & Name */}
         <div
-          className="flex items-center space-x-3 cursor-pointer"
-          onClick={() => navigate(isStudent ? '/student/dashboard' : '/placement/dashboard')}
+          className="flex items-center space-x-3 cursor-pointer group"
+          onClick={() => {
+            if (onNavigateTab) onNavigateTab('dashboard');
+            navigate(isStudent ? '/student/dashboard' : '/placement/dashboard');
+          }}
         >
-          <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 via-purple-600 to-indigo-600 p-0.5 shadow-md">
-            <div className="w-full h-full bg-[#0B0F17] rounded-[14px] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-violet-400" />
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-extrabold text-xl tracking-tight text-white leading-none">
-              Placement<span className="text-violet-400">Hub</span>
+          {/* Geometric Monogram PH Logo Mark */}
+          <div className="w-9 h-9 rounded-xl bg-[#162032] border border-[#1E2E4A] group-hover:border-[#2E5AF0]/50 transition-colors flex items-center justify-center shadow-md">
+            <span className="font-['Plus_Jakarta_Sans'] font-black text-sm tracking-tighter text-white flex items-center">
+              <span className="text-[#2E5AF0]">P</span>
+              <span>H</span>
             </span>
-            <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase mt-1">
-              Campus Recruitment Platform
+          </div>
+
+          {/* Clean Understated Wordmark */}
+          <div className="flex flex-col">
+            <span className="font-['Plus_Jakarta_Sans'] font-extrabold text-base sm:text-lg text-white leading-none tracking-tight">
+              Placement<span className="text-[#2E5AF0]">Hub</span>
+            </span>
+            <span className="text-[10px] text-slate-400 font-medium font-['Inter'] tracking-normal mt-0.5">
+              CAMPUS RECRUITMENT PLATFORM
             </span>
           </div>
         </div>

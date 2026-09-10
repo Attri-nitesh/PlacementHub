@@ -17,6 +17,8 @@ const DriveModal = ({ isOpen, onClose, onSave, companies = [], initialDrive = nu
   const [selectionProcess, setSelectionProcess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const activeCompanies = (companies || []).filter((c) => (c.status || 'Active') === 'Active');
+
   useEffect(() => {
     if (initialDrive) {
       const compId = initialDrive.company?._id || initialDrive.company || '';
@@ -34,11 +36,11 @@ const DriveModal = ({ isOpen, onClose, onSave, companies = [], initialDrive = nu
       setDescription(initialDrive.description || '');
       setSkillsRequired(initialDrive.skillsRequired ? initialDrive.skillsRequired.join(', ') : '');
       setSelectionProcess(initialDrive.selectionProcess ? initialDrive.selectionProcess.join(', ') : '');
-    } else if (companies.length > 0) {
-      if (!selectedCompanyId || !companies.some((c) => c._id === selectedCompanyId)) {
-        setSelectedCompanyId(companies[0]._id);
-        setCompanyName(companies[0].name);
-        setCompanyLogo(companies[0].logo || '');
+    } else if (activeCompanies.length > 0) {
+      if (!selectedCompanyId || !activeCompanies.some((c) => c._id === selectedCompanyId)) {
+        setSelectedCompanyId(activeCompanies[0]._id);
+        setCompanyName(activeCompanies[0].name);
+        setCompanyLogo(activeCompanies[0].logo || '');
       }
     }
   }, [initialDrive, companies, isOpen]);
@@ -57,7 +59,33 @@ const DriveModal = ({ isOpen, onClose, onSave, companies = [], initialDrive = nu
   const handleFormSubmit = async (e, targetStatus) => {
     e.preventDefault();
     if (!selectedCompanyId) {
-      alert('Please select or onboard a company first!');
+      alert('Please select or onboard a corporate partner first!');
+      return;
+    }
+    if (!roleTitle.trim()) {
+      alert('Please enter a Job Role Title.');
+      return;
+    }
+    if (!packageLPA.trim()) {
+      alert('Please enter a Package / CTC value.');
+      return;
+    }
+    if (!location.trim()) {
+      alert('Please enter a Job Location.');
+      return;
+    }
+    if (!deadline) {
+      alert('Please select a valid Application Deadline date.');
+      return;
+    }
+    if (!description.trim()) {
+      alert('Please enter a Job Description.');
+      return;
+    }
+
+    const parsedDeadline = new Date(deadline);
+    if (isNaN(parsedDeadline.getTime())) {
+      alert('Invalid date format for Application Deadline.');
       return;
     }
 
@@ -67,15 +95,19 @@ const DriveModal = ({ isOpen, onClose, onSave, companies = [], initialDrive = nu
         company: selectedCompanyId,
         companyName,
         companyLogo,
-        roleTitle,
-        packageLPA,
-        location,
+        roleTitle: roleTitle.trim(),
+        packageLPA: packageLPA.trim(),
+        location: location.trim(),
         type,
-        eligibilityCGPA: Number(eligibilityCGPA),
-        deadline: new Date(deadline),
-        description,
-        skillsRequired: skillsRequired.split(',').map((s) => s.trim()).filter(Boolean),
-        selectionProcess: selectionProcess.split(',').map((s) => s.trim()).filter(Boolean),
+        eligibilityCGPA: Number(eligibilityCGPA) || 7.0,
+        deadline: parsedDeadline.toISOString(),
+        description: description.trim(),
+        skillsRequired: typeof skillsRequired === 'string'
+          ? skillsRequired.split(',').map((s) => s.trim()).filter(Boolean)
+          : Array.isArray(skillsRequired) ? skillsRequired : [],
+        selectionProcess: typeof selectionProcess === 'string'
+          ? selectionProcess.split(',').map((s) => s.trim()).filter(Boolean)
+          : Array.isArray(selectionProcess) ? selectionProcess : [],
       };
 
       if (!initialDrive && targetStatus) {
@@ -85,7 +117,8 @@ const DriveModal = ({ isOpen, onClose, onSave, companies = [], initialDrive = nu
       await onSave(payload, initialDrive?._id);
       onClose();
     } catch (err) {
-      alert('Failed to save placement drive.');
+      const errMsg = err.response?.data?.message || err.message || 'Failed to save placement drive.';
+      alert(errMsg);
     } finally {
       setLoading(false);
     }
@@ -124,12 +157,12 @@ const DriveModal = ({ isOpen, onClose, onSave, companies = [], initialDrive = nu
                   onChange={(e) => handleCompanySelect(e.target.value)}
                   className="w-full glass-input px-3.5 py-2.5 rounded-xl text-sm font-medium mt-1 bg-[#0B0F17] text-white border border-slate-700"
                 >
-                  {companies.map((comp) => (
+                  {activeCompanies.map((comp) => (
                     <option key={comp._id} value={comp._id}>
                       {comp.name} ({comp.industry})
                     </option>
                   ))}
-                  {companies.length === 0 && <option value="">-- No Active Companies (Onboard First) --</option>}
+                  {activeCompanies.length === 0 && <option value="">-- No Active Companies (Onboard First) --</option>}
                 </select>
               </div>
 

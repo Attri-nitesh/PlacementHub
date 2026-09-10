@@ -1,7 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { UserCheck, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
+import { UserCheck, ShieldCheck, Sparkles, ArrowRight, Github, Linkedin } from 'lucide-react';
+
+const CONTACT_EMAIL = "";
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -71,7 +73,7 @@ const LandingPage = () => {
           {/* Tag Pill */}
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs font-semibold text-slate-300">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Phase 1 Authentication & Infrastructure Ready</span>
+            <span>Phase 1 Authentication &amp; Infrastructure Ready</span>
           </div>
 
           {/* Project Name & Main Tagline */}
@@ -114,13 +116,57 @@ const LandingPage = () => {
         </motion.div>
       </main>
 
+      {/* Need Help? Section */}
+      <section className="w-full max-w-2xl mx-auto px-6 py-10 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 bg-slate-900/40 backdrop-blur-xl text-center space-y-5"
+        >
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              Need Help?
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md mx-auto">
+              Found a bug, have a feature request, or want to get in touch?<br />
+              Feel free to connect with me.
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-white/10 flex items-center justify-center space-x-3 text-xs sm:text-sm font-medium text-slate-400">
+            <span>Designed &amp; Developed by Mahesh Sharma</span>
+
+            {/* GitHub Icon Link */}
+            <a
+              href="https://github.com/Attri-nitesh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-violet-400 hover:scale-110 hover:drop-shadow-[0_0_8px_rgba(167,139,250,0.6)] transition-all duration-200 cursor-pointer p-0.5"
+              title="GitHub Profile"
+            >
+              <Github className="w-5 h-5" />
+            </a>
+
+            {/* LinkedIn Icon Link */}
+            <a
+              href="https://www.linkedin.com/in/mahesh-sharma-964391311/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-blue-400 hover:scale-110 hover:drop-shadow-[0_0_8px_rgba(96,165,250,0.6)] transition-all duration-200 cursor-pointer p-0.5"
+              title="LinkedIn Profile"
+            >
+              <Linkedin className="w-5 h-5" />
+            </a>
+          </div>
+        </motion.div>
+      </section>
+
       {/* Footer */}
-      <footer className="w-full max-w-7xl mx-auto px-6 py-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 relative z-10">
-        <div>&copy; 2026 PlacementHub. All rights reserved.</div>
-        <div className="flex items-center space-x-4">
-          <span className="hover:text-slate-200 cursor-pointer">Security Protocol</span>
-          <span>&bull;</span>
-          <span className="hover:text-slate-200 cursor-pointer">Phase 1 Release</span>
+      <footer className="w-full border-t border-white/10 relative z-10 bg-[#0B0F17]/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6 py-6 text-center text-xs sm:text-sm font-medium text-slate-400 opacity-80">
+          &copy; 2026 PlacementHub. All Rights Reserved.
         </div>
       </footer>
     </div>

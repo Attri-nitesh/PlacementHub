@@ -56,12 +56,22 @@ const authorizeStudent = (req, res, next) => {
 };
 
 const authorizePlacementCell = (req, res, next) => {
-  if (req.user && req.user.role === 'placement') {
+  if (req.user && (req.user.role === 'placement' || req.user.role === 'admin' || req.user.role === 'superadmin')) {
     return next();
   }
   return res.status(403).json({
     success: false,
-    message: 'Forbidden: Access restricted to Placement Cell only.',
+    message: 'Forbidden: Access restricted to Placement Cell and Admins.',
+  });
+};
+
+const authorizeAdmin = (req, res, next) => {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: 'Forbidden: Access restricted to Super Admin only.',
   });
 };
 
@@ -69,4 +79,5 @@ module.exports = {
   authenticateUser,
   authorizeStudent,
   authorizePlacementCell,
+  authorizeAdmin,
 };

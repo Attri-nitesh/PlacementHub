@@ -66,7 +66,7 @@ const JobDetailsModal = ({ isOpen, drive, onClose, onApplied }) => {
         setShowAtsModal(true);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to run AI ATS analysis. Ensure your resume PDF is uploaded.');
+      setError(err.message || 'Failed to run AI ATS analysis. Ensure your resume PDF is uploaded.');
     } finally {
       setLoadingAts(false);
       setReanalyzing(false);

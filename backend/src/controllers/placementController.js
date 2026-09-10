@@ -80,10 +80,28 @@ const getPlacementDashboard = async (req, res, next) => {
   }
 };
 
-// --- COMPANY MANAGEMENT ---
+// --- COMPANY MANAGEMENT (SINGLE SOURCE OF TRUTH) ---
 const getCompanies = async (req, res, next) => {
   try {
-    const companies = await Company.find().sort({ createdAt: -1 });
+    const { status, search } = req.query;
+    let query = {};
+
+    if (status && status !== 'All') {
+      query.status = status;
+    } else if (!status && req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
+      // By default for non-admin requests, return only Active companies
+      query.status = 'Active';
+    }
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { industry: { $regex: search, $options: 'i' } },
+        { officerName: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const companies = await Company.find(query).sort({ createdAt: -1 });
     res.status(200).json({ success: true, companies });
   } catch (error) {
     next(error);
@@ -98,6 +116,8 @@ const createCompany = async (req, res, next) => {
 
     if (io) {
       io.to('role:placement').emit('company_created', company);
+      io.to('role:admin').emit('company_created', company);
+      io.to('role:student').emit('company_created', company);
     }
 
     await broadcastRoleNotification(io, 'placement', {
@@ -121,7 +141,20 @@ const createCompany = async (req, res, next) => {
 const updateCompany = async (req, res, next) => {
   try {
     const company = await Company.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).json({ success: true, company, message: 'Company updated!' });
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'Company record not found in database.' });
+    }
+
+    const io = req.app.get('io');
+    await logActivity(io, 'UPDATE_COMPANY', req.user._id, null, `Updated company: ${company.name}`);
+
+    if (io) {
+      io.to('role:placement').emit('company_updated', company);
+      io.to('role:admin').emit('company_updated', company);
+      io.to('role:student').emit('company_updated', company);
+    }
+
+    res.status(200).json({ success: true, company, message: 'Company updated successfully!' });
   } catch (error) {
     next(error);
   }
@@ -129,8 +162,23 @@ const updateCompany = async (req, res, next) => {
 
 const deleteCompany = async (req, res, next) => {
   try {
+    const company = await Company.findById(req.params.id);
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'Company record not found.' });
+    }
+
     await Company.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: 'Company deleted' });
+
+    const io = req.app.get('io');
+    await logActivity(io, 'DELETE_COMPANY', req.user._id, null, `Permanently deleted company: ${company.name}`);
+
+    if (io) {
+      io.to('role:placement').emit('company_deleted', req.params.id);
+      io.to('role:admin').emit('company_deleted', req.params.id);
+      io.to('role:student').emit('company_deleted', req.params.id);
+    }
+
+    res.status(200).json({ success: true, message: 'Company permanently removed from MongoDB database.' });
   } catch (error) {
     next(error);
   }
@@ -204,7 +252,26 @@ const getDrives = async (req, res, next) => {
 
 const createDrive = async (req, res, next) => {
   try {
-    const { company: companyId, status = 'Draft' } = req.body;
+    const { company: companyId, roleTitle, packageLPA, location, deadline, description, status = 'Draft' } = req.body;
+
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'Please select a valid corporate partner.' });
+    }
+    if (!roleTitle) {
+      return res.status(400).json({ success: false, message: 'Job Role Title is required.' });
+    }
+    if (!packageLPA) {
+      return res.status(400).json({ success: false, message: 'Package / CTC is required.' });
+    }
+    if (!location) {
+      return res.status(400).json({ success: false, message: 'Job Location is required.' });
+    }
+    if (!deadline || isNaN(new Date(deadline).getTime())) {
+      return res.status(400).json({ success: false, message: 'A valid Application Deadline date is required.' });
+    }
+    if (!description) {
+      return res.status(400).json({ success: false, message: 'Job Description is required.' });
+    }
 
     let companyDoc = null;
     if (companyId) {
@@ -218,6 +285,7 @@ const createDrive = async (req, res, next) => {
       company: companyId || companyDoc?._id,
       companyName: req.body.companyName || companyDoc?.name || 'Partner Company',
       companyLogo: req.body.companyLogo || companyDoc?.logo || '',
+      deadline: new Date(deadline),
       status: isPublished ? 'Published' : 'Draft',
       publishedAt: isPublished ? new Date() : null,
       publishedBy: req.user?.name || 'Placement Cell Officer',

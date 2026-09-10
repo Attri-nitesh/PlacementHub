@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useSearchParams } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import Sidebar from '../components/Sidebar';
+import PlacementLayout from '../layouts/PlacementLayout';
 import CompanyModal from '../components/placement/CompanyModal';
 import DriveModal from '../components/placement/DriveModal';
 import DriveActionsManager from '../components/placement/DriveActionsManager';
@@ -14,6 +13,7 @@ import RejectionModal from '../components/placement/RejectionModal';
 import AnnouncementModal from '../components/placement/AnnouncementModal';
 import PlacementAnalytics from '../components/placement/PlacementAnalytics';
 import NotificationsCenter from '../components/NotificationsCenter';
+import ActivityLogsDashboard from '../components/placement/ActivityLogsDashboard';
 
 import {
   getPlacementDashboard,
@@ -139,6 +139,7 @@ const PlacementDashboard = () => {
     { id: 'announcements', label: 'Announcements & Alerts', icon: Megaphone },
     { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
     { id: 'activity_logs', label: 'Activity Logs', icon: Activity },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
   const loadDashboard = async () => {
@@ -317,6 +318,19 @@ const PlacementDashboard = () => {
 
     socket.on('company_created', () => {
       loadCompanies();
+      loadDrives();
+      loadDashboard();
+    });
+
+    socket.on('company_updated', () => {
+      loadCompanies();
+      loadDrives();
+      loadDashboard();
+    });
+
+    socket.on('company_deleted', () => {
+      loadCompanies();
+      loadDrives();
       loadDashboard();
     });
 
@@ -326,6 +340,8 @@ const PlacementDashboard = () => {
       socket.off('drive_published');
       socket.off('drive_status_updated');
       socket.off('company_created');
+      socket.off('company_updated');
+      socket.off('company_deleted');
     };
   }, [socket]);
 
@@ -603,24 +619,8 @@ const PlacementDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] text-white flex flex-col selection:bg-violet-500/30">
-      {/* Navbar */}
-      <Navbar onNavigateTab={(tab) => setActiveTab(tab)} />
-
-      {/* Main Workspace Layout */}
-      <div className="flex-1 w-full flex flex-col md:flex-row gap-6 px-6 sm:px-8 py-6">
-        {/* Sidebar */}
-        <Sidebar
-          items={sidebarItems}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onLogout={logout}
-          role="placement"
-        />
-
-        {/* Main Content Area */}
-        <main className="flex-1 space-y-6">
-          {/* TAB 1: OVERVIEW DASHBOARD */}
+    <PlacementLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      {/* TAB 1: OVERVIEW DASHBOARD */}
           {activeTab === 'dashboard' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               {/* Hero Banner */}
@@ -1230,34 +1230,18 @@ const PlacementDashboard = () => {
           )}
 
           {/* TAB 10: AUDIT ACTIVITY LOGS */}
-          {activeTab === 'activity_logs' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <div className="glass-panel p-6 rounded-3xl border border-white/10 bg-slate-900/60">
-                <h2 className="text-2xl font-extrabold text-white tracking-tight flex items-center space-x-2">
-                  <Activity className="w-6 h-6 text-violet-400" />
-                  <span>System Activity Audit Logs</span>
-                </h2>
-              </div>
-
-              <div className="space-y-2">
-                {activityLogs.map((log) => (
-                  <div key={log._id} className="glass-panel p-4 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="font-bold text-white block">{log.details}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        By: {log.performedBy?.name || 'Officer'} &bull; {new Date(log.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <span className="px-2.5 py-0.5 rounded bg-violet-500/20 text-violet-300 font-bold text-[10px]">
-                      {log.action}
-                    </span>
-                  </div>
-                ))}
-              </div>
+          {(activeTab === 'logs' || activeTab === 'activity_logs') && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <ActivityLogsDashboard />
             </motion.div>
           )}
-        </main>
-      </div>
+
+          {/* TAB 11: NOTIFICATIONS HUB */}
+          {activeTab === 'notifications' && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <NotificationsCenter onNavigateTab={(tab) => setActiveTab(tab)} />
+            </motion.div>
+          )}
 
       {/* Modals & Dialogs */}
       <CompanyModal
@@ -1391,7 +1375,7 @@ const PlacementDashboard = () => {
           setReviewAppModal(null);
         }}
       />
-    </div>
+    </PlacementLayout>
   );
 };
 

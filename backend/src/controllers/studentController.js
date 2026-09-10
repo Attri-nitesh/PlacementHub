@@ -13,6 +13,7 @@ const User = require('../models/User');
 const ResumeAnalysis = require('../models/ResumeAnalysis');
 const { createAndSendNotification } = require('../services/notificationService');
 const { parsePdfBuffer } = require('../services/pdfParserService');
+const { sendPhoneSmsOtp, verifyOtpHash } = require('../services/otpService');
 
 // Helper to calculate Profile Completion & Placement Readiness Score
 const calculateScores = async (userId) => {
@@ -107,11 +108,12 @@ const getStudentProfile = async (req, res, next) => {
     }
 
     const scoreMetrics = await calculateScores(req.user._id);
+    const freshUser = await User.findById(req.user._id).select('-password');
 
     res.status(200).json({
       success: true,
       profile,
-      user: req.user,
+      user: freshUser,
       metrics: scoreMetrics,
     });
   } catch (error) {
@@ -132,7 +134,20 @@ const updateStudentProfile = async (req, res, next) => {
       profile = new Profile({ user: req.user._id });
     }
 
-    if (phone !== undefined) profile.phone = phone;
+    const cleanInputPhone = phone !== undefined ? phone.trim() : undefined;
+    const cleanProfilePhone = profile.phone ? profile.phone.trim() : '';
+
+    if (cleanInputPhone !== undefined && cleanInputPhone !== cleanProfilePhone) {
+      profile.phone = cleanInputPhone;
+      profile.phoneVerified = false;
+      profile.phoneVerifiedAt = null;
+      await User.findByIdAndUpdate(req.user._id, {
+        phone: cleanInputPhone,
+        phoneVerified: false,
+        phoneVerifiedAt: null,
+      });
+    }
+
     if (dob !== undefined) profile.dob = dob;
     if (gender !== undefined) profile.gender = gender;
     if (address !== undefined) profile.address = address;
@@ -699,6 +714,182 @@ const getStudentAnalytics = async (req, res, next) => {
   }
 };
 
+// --- ENTERPRISE PHONE NUMBER VERIFICATION ---
+const sendPhoneOtp = async (req, res, next) => {
+  try {
+    const { phone } = req.body;
+    if (!phone || typeof phone !== 'string' || phone.trim().length < 10) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit phone number.' });
+    }
+
+    const cleanPhone = phone.trim();
+    let profile = await Profile.findOne({ user: req.user._id });
+    if (!profile) {
+      profile = await Profile.create({ user: req.user._id, phone: cleanPhone });
+    }
+
+    // Reset verification state if phone number changed
+    if (profile.phone !== cleanPhone) {
+      profile.phone = cleanPhone;
+      profile.phoneVerified = false;
+      profile.phoneVerifiedAt = null;
+      await User.findByIdAndUpdate(req.user._id, {
+        phone: cleanPhone,
+        phoneVerified: false,
+        phoneVerifiedAt: null,
+      });
+    }
+
+    const now = new Date();
+    const otpData = profile.phoneOtp || {};
+
+    // Rate-limiting check 1: Resend timer (30 seconds)
+    if (otpData.lastSentAt && (now - new Date(otpData.lastSentAt)) < 30 * 1000) {
+      const waitSec = Math.ceil((30 * 1000 - (now - new Date(otpData.lastSentAt))) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitSec} seconds before requesting another OTP.`,
+        resendInSeconds: waitSec,
+      });
+    }
+
+    // Rate-limiting check 2: Hourly window limit (Max 3 sends per hour)
+    let sendCount = otpData.sendCountHour || 0;
+    let windowStart = otpData.hourWindowStart ? new Date(otpData.hourWindowStart) : now;
+
+    if ((now - windowStart) > 60 * 60 * 1000) {
+      windowStart = now;
+      sendCount = 0;
+    }
+
+    if (sendCount >= 3) {
+      return res.status(429).json({
+        success: false,
+        message: 'Maximum OTP requests (3 per hour) reached for this number. Please try again later.',
+      });
+    }
+
+    // Generate & Send OTP via Service
+    const { otp, hash, isTwilio } = await sendPhoneSmsOtp(cleanPhone);
+
+    profile.phoneOtp = {
+      hash,
+      expiresAt: new Date(now.getTime() + 5 * 60 * 1000), // 5 minutes
+      attempts: 0,
+      lastSentAt: now,
+      sendCountHour: sendCount + 1,
+      hourWindowStart: windowStart,
+    };
+
+    await profile.save();
+
+    res.status(200).json({
+      success: true,
+      message: isTwilio
+        ? `6-digit SMS OTP sent to ${cleanPhone}.`
+        : `6-digit OTP sent to ${cleanPhone} (Development Mode). Check server console for code.`,
+      expiresInMinutes: 5,
+      resendInSeconds: 30,
+      isDevMode: !isTwilio,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyPhoneOtp = async (req, res, next) => {
+  try {
+    const { phone, otp } = req.body;
+    if (!otp || String(otp).trim().length !== 6) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 6-digit OTP.' });
+    }
+
+    const profile = await Profile.findOne({ user: req.user._id }).select('+phoneOtp.hash');
+    if (!profile || !profile.phoneOtp || !profile.phoneOtp.hash) {
+      return res.status(400).json({
+        success: false,
+        message: 'No active OTP request found. Please click "Send OTP" first.',
+      });
+    }
+
+    const now = new Date();
+    const { hash, expiresAt, attempts = 0 } = profile.phoneOtp;
+
+    // 1. Check expiration (5 minutes)
+    if (now > new Date(expiresAt)) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has expired. Please request a new 6-digit code.',
+      });
+    }
+
+    // 2. Check max attempts (Max 5 attempts)
+    if (attempts >= 5) {
+      profile.phoneOtp.hash = undefined;
+      await profile.save();
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum verification attempts (5) exceeded. Please request a new OTP.',
+      });
+    }
+
+    // 3. Verify OTP Hash
+    const isValid = verifyOtpHash(String(otp).trim(), hash);
+
+    if (!isValid) {
+      profile.phoneOtp.attempts = attempts + 1;
+      await profile.save();
+      const remaining = 5 - (attempts + 1);
+      return res.status(400).json({
+        success: false,
+        message: `Invalid OTP entered. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`,
+        remainingAttempts: remaining,
+      });
+    }
+
+    // 4. Success: Set phoneVerified = true on both Profile and User
+    profile.phoneVerified = true;
+    profile.phoneVerifiedAt = now;
+    profile.phoneOtp.hash = undefined; // Invalidate used OTP hash
+    await profile.save();
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        phone: profile.phone,
+        phoneVerified: true,
+        phoneVerifiedAt: now,
+      },
+      { new: true }
+    ).select('-password');
+
+    res.status(200).json({
+      success: true,
+      message: 'Phone number verified successfully!',
+      phoneVerified: true,
+      phoneVerifiedAt: profile.phoneVerifiedAt,
+      profile,
+      user: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getPhoneStatus = async (req, res, next) => {
+  try {
+    const profile = await Profile.findOne({ user: req.user._id });
+    res.status(200).json({
+      success: true,
+      phone: profile?.phone || '',
+      phoneVerified: profile?.phoneVerified || false,
+      phoneVerifiedAt: profile?.phoneVerifiedAt || null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getStudentProfile,
   updateStudentProfile,
@@ -732,4 +923,7 @@ module.exports = {
   markNotificationRead,
   deleteNotification,
   getStudentAnalytics,
+  sendPhoneOtp,
+  verifyPhoneOtp,
+  getPhoneStatus,
 };

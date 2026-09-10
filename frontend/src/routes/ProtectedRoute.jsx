@@ -16,17 +16,26 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   }
 
   if (!isAuthenticated || !user) {
+    if (allowedRole === 'admin') {
+      return <Navigate to="/admin/login" replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRole && user.role !== allowedRole) {
-    // Redirect to correct dashboard for their actual role
-    if (user.role === 'student') {
-      return <Navigate to="/student/dashboard" replace />;
-    } else if (user.role === 'placement') {
-      return <Navigate to="/placement/dashboard" replace />;
+  // Strict Cross-Navigation Guard
+  if (allowedRole) {
+    const isExactRoleMatch = user.role === allowedRole;
+    const isAdminUser = user.role === 'admin' || user.role === 'superadmin';
+
+    // Admins can access everything. Non-admins cannot access outside their role portal.
+    if (!isExactRoleMatch && !isAdminUser) {
+      if (user.role === 'student') {
+        return <Navigate to="/student/dashboard" replace />;
+      } else if (user.role === 'placement') {
+        return <Navigate to="/placement/dashboard" replace />;
+      }
+      return <Navigate to="/" replace />;
     }
-    return <Navigate to="/" replace />;
   }
 
   return children;

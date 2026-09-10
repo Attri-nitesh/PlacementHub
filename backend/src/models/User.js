@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['student', 'placement', null],
+      enum: ['student', 'placement', 'admin', 'superadmin', null],
       default: null,
     },
     authProvider: {
@@ -44,6 +44,18 @@ const userSchema = new mongoose.Schema(
     rollNumber: {
       type: String,
       sparse: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    phoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+    phoneVerifiedAt: {
+      type: Date,
+      default: null,
     },
   },
   {

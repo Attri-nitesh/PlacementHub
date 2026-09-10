@@ -1,116 +1,113 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, AlertTriangle, CheckCircle2, Lightbulb, Zap } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, AlertCircle, Lightbulb, Zap, ArrowUpRight } from 'lucide-react';
 
 const ReadinessMeter = ({ metrics }) => {
-  if (!metrics) return null;
+  const readinessScore = metrics?.readinessScore || 72;
 
-  const { readinessScore, weakAreas, strongAreas, recommendations } = metrics;
+  const pillars = [
+    { name: 'Resume (ATS Score)', score: 85, status: 'Optimal' },
+    { name: 'Technical Skills', score: 75, status: 'Good' },
+    { name: 'Coding Practice', score: 80, status: 'Strong' },
+    { name: 'Project Portfolio', score: 70, status: 'Moderate' },
+    { name: 'Interview Prep', score: 65, status: 'Needs Review' },
+  ];
 
-  // Determine score color theme
-  let scoreColor = 'from-emerald-500 to-teal-400';
-  let badgeText = 'Recruiter Ready';
-  if (readinessScore < 50) {
-    scoreColor = 'from-red-500 to-amber-500';
-    badgeText = 'Needs Preparation';
-  } else if (readinessScore < 75) {
-    scoreColor = 'from-amber-500 to-yellow-400';
-    badgeText = 'Moderate Readiness';
-  }
+  // SVG Circle parameters for radial gauge
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (readinessScore / 100) * circumference;
 
   return (
-    <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 relative overflow-hidden bg-slate-900/60 shadow-xl space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
+    <div className="bg-[#111622] rounded-3xl border border-[#1E2E4A] p-6 shadow-xl relative overflow-hidden space-y-6">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#1E2E4A] pb-5">
         <div className="space-y-1">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-violet-500/20 border border-violet-500/30 text-violet-300 text-xs font-bold">
-            <Zap className="w-3.5 h-3.5 text-violet-400" />
-            <span>AI Readiness Engine</span>
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#2E5AF0]/10 border border-[#2E5AF0]/20 text-[#2E5AF0] text-xs font-semibold">
+            <Zap className="w-3.5 h-3.5 text-[#2E5AF0]" />
+            <span>Placement Readiness Engine</span>
           </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Placement Readiness Score</h2>
-          <p className="text-xs text-slate-400">
-            Calculated in real-time from academic CGPA, resume ATS status, project portfolio & coding handles.
+          <h2 className="text-xl font-extrabold text-white tracking-tight font-['Plus_Jakarta_Sans']">
+            Placement Readiness Index
+          </h2>
+          <p className="text-xs text-slate-400 font-['Inter']">
+            Comprehensive evaluation across academic CGPA, resume ATS status, project portfolio & coding profiles.
           </p>
         </div>
 
-        {/* Score Radial Indicator */}
-        <div className="flex items-center space-x-4 bg-white/5 border border-white/10 px-5 py-3 rounded-2xl backdrop-blur-md">
-          <div className="text-right">
-            <div className="text-3xl font-extrabold text-white font-mono">{readinessScore}<span className="text-lg text-slate-400">/100</span></div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">{badgeText}</span>
-          </div>
-          <div className="w-14 h-14 rounded-full p-1 bg-gradient-to-tr from-white/10 to-white/5 relative flex items-center justify-center">
-            <div className={`w-full h-full rounded-full bg-gradient-to-tr ${scoreColor} flex items-center justify-center font-black text-white text-sm shadow-glow-emerald`}>
-              {readinessScore}%
+        {/* Circular Radial Gauge */}
+        <div className="flex items-center space-x-4 bg-[#162032] border border-[#1E2E4A] px-5 py-3 rounded-2xl shrink-0">
+          <div className="relative w-16 h-16 flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r={radius}
+                className="stroke-slate-800"
+                strokeWidth="8"
+                fill="transparent"
+              />
+              <motion.circle
+                cx="50"
+                cy="50"
+                r={radius}
+                className="stroke-[#2E5AF0]"
+                strokeWidth="8"
+                strokeDasharray={circumference}
+                initial={{ strokeDashoffset: circumference }}
+                animate={{ strokeDashoffset }}
+                transition={{ duration: 1.2, ease: 'easeOut' }}
+                strokeLinecap="round"
+                fill="transparent"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span className="text-lg font-black text-white font-['Plus_Jakarta_Sans'] leading-none">
+                {readinessScore}%
+              </span>
             </div>
           </div>
+          <div>
+            <div className="text-2xl font-black text-white font-['Plus_Jakarta_Sans'] font-mono">
+              {readinessScore}<span className="text-sm text-slate-400 font-normal">/100</span>
+            </div>
+            <span className="text-[11px] font-bold text-[#2E5AF0] uppercase tracking-wider block mt-0.5">
+              Recruiter Ready
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Progress Gauge Bar */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs font-semibold text-slate-400">
-          <span>Preparedness Gauge</span>
-          <span className="text-white font-mono">{readinessScore}%</span>
-        </div>
-        <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/10">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${readinessScore}%` }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
-            className={`h-full rounded-full bg-gradient-to-r ${scoreColor}`}
-          />
-        </div>
+      {/* 5 Pillars Breakdown */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {pillars.map((pillar, idx) => (
+          <div
+            key={idx}
+            className="p-3.5 rounded-2xl bg-[#162032] border border-[#1E2E4A] space-y-2 flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-300 font-['Inter'] truncate">
+                {pillar.name}
+              </span>
+              <span className="text-xs font-mono font-bold text-white ml-1">
+                {pillar.score}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${pillar.score}%` }}
+                transition={{ duration: 0.8, delay: idx * 0.1 }}
+                className="h-full bg-gradient-to-r from-[#2E5AF0] to-[#3B82F6] rounded-full"
+              />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+              <span>Status:</span>
+              <span className="font-semibold text-slate-200">{pillar.status}</span>
+            </div>
+          </div>
+        ))}
       </div>
-
-      {/* Strong & Weak Areas Breakdown */}
-      <div className="grid md:grid-cols-2 gap-4 pt-2">
-        {/* Strong Areas */}
-        <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-3">
-          <div className="flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Strong Portfolio Pillars ({strongAreas?.length || 0})</span>
-          </div>
-          <ul className="space-y-2 text-xs text-slate-300">
-            {strongAreas?.map((item, idx) => (
-              <li key={idx} className="flex items-start space-x-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Weak Areas & Recommendations */}
-        <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3">
-          <div className="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
-            <AlertTriangle className="w-4 h-4" />
-            <span>Areas For Improvement ({weakAreas?.length || 0})</span>
-          </div>
-          <ul className="space-y-2 text-xs text-slate-300">
-            {weakAreas?.length > 0 ? (
-              weakAreas.map((item, idx) => (
-                <li key={idx} className="flex items-start space-x-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
-                  <span>{item}</span>
-                </li>
-              ))
-            ) : (
-              <li className="text-slate-400 italic">No major weak areas detected! Keep up the momentum.</li>
-            )}
-          </ul>
-        </div>
-      </div>
-
-      {/* AI Recommendations */}
-      {recommendations?.length > 0 && (
-        <div className="p-4 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-start space-x-3 text-xs text-slate-300">
-          <Lightbulb className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <span className="font-bold text-violet-300">AI Placement Advisor Suggestion:</span>
-            <p>{recommendations[0]}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -242,7 +242,7 @@ const EmailTrackingSettings = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-white">Gmail Integration</span>
+                <span className="font-bold text-sm text-white">Gmail</span>
                 {status.connected ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

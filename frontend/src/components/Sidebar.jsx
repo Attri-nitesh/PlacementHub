@@ -1,70 +1,93 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings as SettingsIcon } from 'lucide-react';
 
-const Sidebar = ({ items, activeTab, onTabChange, onLogout, role }) => {
+const Sidebar = ({ items = [], activeTab, onTabChange, onLogout, role }) => {
   const isStudent = role === 'student';
+  const isAdmin = role === 'admin' || role === 'superadmin';
+
+  // Separate main navigation items from Settings
+  const settingsItem = items.find((i) => i.id === 'settings') || {
+    id: 'settings',
+    label: 'Settings',
+    icon: SettingsIcon,
+  };
+  const mainItems = items.filter((i) => i.id !== 'settings');
+
+  const getActiveItemClasses = () => {
+    if (isAdmin) return 'text-[#F5F7FB] bg-rose-500/15 border border-rose-500/30';
+    if (isStudent) return 'text-[#F5F7FB] bg-[#3B68FF]/15 border border-[#3B68FF]/30';
+    return 'text-[#F5F7FB] bg-amber-500/15 border border-amber-500/30';
+  };
+
+  const getActiveIconClasses = () => {
+    if (isAdmin) return 'text-rose-400';
+    if (isStudent) return 'text-[#3B68FF]';
+    return 'text-amber-400';
+  };
 
   return (
-    <aside className="w-full md:w-64 lg:w-72 glass-panel border border-white/10 rounded-3xl flex flex-col justify-between shrink-0 p-5 md:min-h-[calc(100vh-6rem)] shadow-xl relative overflow-hidden bg-slate-900/40 backdrop-blur-xl">
-      <div className="space-y-6">
-        {/* Navigation Header Section */}
-        <div>
-          <p className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between">
-            <span>{isStudent ? 'Student Workspace' : 'Placement Command'}</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          </p>
-
-          <nav className="space-y-2">
-            {items.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onTabChange(item.id)}
-                  className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 relative group ${
-                    isActive
-                      ? isStudent
-                        ? 'text-white bg-emerald-500/15 border border-emerald-500/30 shadow-glow-emerald'
-                        : 'text-white bg-violet-500/15 border border-violet-500/30 shadow-glow-violet'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+    <aside className="w-full md:w-64 lg:w-[270px] shrink-0 bg-[#101622] border border-[#222B3D] rounded-3xl p-4 shadow-2xl relative overflow-hidden flex flex-col justify-start">
+      {/* PRIMARY NAVIGATION GROUP */}
+      <div className="space-y-1.5">
+        <nav className="space-y-1.5">
+          {mainItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onTabChange(item.id)}
+                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold font-['Inter'] transition-all duration-200 relative group ${
+                  isActive
+                    ? getActiveItemClasses()
+                    : 'text-[#91A0B8] hover:text-[#F5F7FB] hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <Icon
+                  className={`w-4 h-4 shrink-0 transition-colors ${
+                    isActive ? getActiveIconClasses() : 'text-[#91A0B8] group-hover:text-[#F5F7FB]'
                   }`}
-                >
-                  <Icon
-                    className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${
-                      isActive
-                        ? isStudent
-                          ? 'text-emerald-400'
-                          : 'text-violet-400'
-                        : 'text-slate-400 group-hover:text-slate-200'
-                    }`}
-                  />
-                  <span>{item.label}</span>
-
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className={`absolute right-3 w-1.5 h-6 rounded-full ${
-                        isStudent ? 'bg-emerald-400 shadow-glow-emerald' : 'bg-violet-400 shadow-glow-violet'
-                      }`}
-                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+                />
+                <span className="truncate">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Logout Bottom Trigger */}
-      <div className="pt-4 border-t border-white/10">
+      {/* 3. SUBTLE DIVIDER */}
+      <div className="border-t border-[#222B3D] my-3.5" />
+
+      {/* 4. SETTINGS & SIGN OUT GROUP (VISUALLY GROUPED TOGETHER) */}
+      <div className="space-y-1.5">
+        {/* Settings Item */}
+        {settingsItem && (
+          <button
+            onClick={() => onTabChange(settingsItem.id)}
+            className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold font-['Inter'] transition-all duration-200 relative group ${
+              activeTab === settingsItem.id
+                ? getActiveItemClasses()
+                : 'text-[#91A0B8] hover:text-[#F5F7FB] hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            <settingsItem.icon
+              className={`w-4 h-4 shrink-0 transition-colors ${
+                activeTab === settingsItem.id
+                  ? getActiveIconClasses()
+                  : 'text-[#91A0B8] group-hover:text-[#F5F7FB]'
+              }`}
+            />
+            <span className="truncate">{settingsItem.label}</span>
+          </button>
+        )}
+
+        {/* Sign Out Item */}
         <button
           onClick={onLogout}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-200 group"
+          className="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold font-['Inter'] text-[#FF6B6B] hover:bg-[#FF6B6B]/10 hover:border-[#FF6B6B]/20 border border-transparent transition-all duration-200 group"
         >
-          <LogOut className="w-5 h-5 text-red-400 group-hover:rotate-12 transition-transform" />
+          <LogOut className="w-4 h-4 text-[#FF6B6B] group-hover:translate-x-0.5 transition-transform shrink-0" />
           <span>Sign Out</span>
         </button>
       </div>

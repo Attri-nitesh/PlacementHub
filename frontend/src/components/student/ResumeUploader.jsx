@@ -20,7 +20,6 @@ const ResumeUploader = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [previewOpen, setPreviewOpen] = useState(false);
 
   const fetchResumeData = async () => {
     try {
@@ -28,7 +27,7 @@ const ResumeUploader = () => {
       const data = await getResume();
       setResumeState(data.resume);
     } catch (err) {
-      console.error('Failed to fetch resume:', err);
+      setError('Failed to fetch uploaded resume');
     } finally {
       setLoading(false);
     }
@@ -43,99 +42,117 @@ const ResumeUploader = () => {
     if (!file) return;
 
     if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-      setError('Unsupported file type. Only PDF format is accepted.');
+      setError('Only PDF files are supported.');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError('File size exceeds 5 MB limit.');
+      setError('File size must be less than 5 MB.');
       return;
     }
 
+    const formData = new FormData();
+    formData.append('resume', file);
+
     try {
-      setError('');
       setUploading(true);
-      const formData = new FormData();
-      formData.append('resume', file);
+      setError('');
+      setSuccess('');
+
       const res = await uploadResume(formData);
       setResumeState(res.resume);
-      setSuccess('Resume uploaded & verified successfully!');
-      setTimeout(() => setSuccess(''), 4000);
+      setSuccess('Resume uploaded and ATS ingested successfully!');
     } catch (err) {
-      setError(err.response?.data?.message || 'Resume upload failed.');
+      setError(err.message || 'Failed to upload resume. Please try again.');
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete your resume?')) return;
+    if (!window.confirm('Are you sure you want to delete your uploaded resume?')) return;
+
     try {
       setLoading(true);
       await deleteResume();
       setResumeState(null);
-      setSuccess('Resume deleted.');
-      setTimeout(() => setSuccess(''), 4000);
+      setSuccess('Resume removed successfully.');
     } catch (err) {
-      setError('Failed to delete resume.');
+      setError(err.message || 'Failed to delete resume');
     } finally {
       setLoading(false);
     }
   };
 
   const formatBytes = (bytes) => {
-    if (!bytes) return '0 KB';
-    const kb = bytes / 1024;
-    if (kb > 1024) return (kb / 1024).toFixed(2) + ' MB';
-    return kb.toFixed(1) + ' KB';
+    if (!bytes) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const handlePreviewResume = () => {
+    if (!resume?.fileUrl) return;
+    const fullUrl = resume.fileUrl.startsWith('http')
+      ? resume.fileUrl
+      : `http://localhost:5001${resume.fileUrl}`;
+    window.open(fullUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  if (loading) {
+    return (
+      <div className="glass-panel p-8 rounded-3xl border border-white/10 flex items-center justify-center space-x-3 text-slate-400">
+        <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+        <span className="text-sm font-medium">Checking Resume Vault...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 relative overflow-hidden bg-slate-900/60 shadow-xl space-y-6">
-      <div className="flex items-center justify-between border-b border-white/10 pb-6">
-        <div className="space-y-1">
-          <h2 className="text-xl font-bold text-white tracking-tight flex items-center space-x-2">
-            <FileText className="w-5 h-5 text-emerald-400" />
-            <span>Resume Vault & ATS Verification</span>
+    <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-black text-white flex items-center space-x-2">
+            <span>Resume Vault</span>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+              ATS Verified
+            </span>
           </h2>
-          <p className="text-xs text-slate-400">
-            Upload your latest ATS-optimized single-page PDF resume for campus placement drives.
+          <p className="text-xs text-slate-400 mt-1">
+            Upload your master resume PDF for placement drive applications & AI ATS optimization.
           </p>
         </div>
-
-        {resume && (
-          <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center space-x-1.5">
-            <FileCheck className="w-3.5 h-3.5" />
-            <span>Verified Document</span>
-          </span>
-        )}
       </div>
 
-      {/* Notifications */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center space-x-2">
-          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-          <span>{error}</span>
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between text-rose-300 text-xs">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button onClick={() => setError('')} className="p-1 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {success && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center space-x-2">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{success}</span>
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-emerald-300 text-xs">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="w-4 h-4 shrink-0" />
+            <span>{success}</span>
+          </div>
+          <button onClick={() => setSuccess('')} className="p-1 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
-      {loading ? (
-        <div className="py-12 flex flex-col items-center justify-center space-y-3 text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
-          <span className="text-xs">Fetching resume status...</span>
-        </div>
-      ) : resume ? (
-        /* Uploaded Resume Card */
-        <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 hover:border-emerald-500/30 transition-colors">
+      {resume ? (
+        <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
               <FileText className="w-7 h-7" />
             </div>
             <div className="space-y-1">
@@ -152,7 +169,7 @@ const ResumeUploader = () => {
 
           <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
             <button
-              onClick={() => setPreviewOpen(true)}
+              onClick={handlePreviewResume}
               className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-colors"
             >
               <Eye className="w-4 h-4 text-violet-400" />
@@ -180,7 +197,6 @@ const ResumeUploader = () => {
           </div>
         </div>
       ) : (
-        /* Upload Drag Zone */
         <label className="border-2 border-dashed border-white/20 hover:border-emerald-400/60 rounded-3xl p-8 sm:p-12 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 bg-white/5 hover:bg-emerald-500/5 group">
           <input
             type="file"
@@ -206,39 +222,6 @@ const ResumeUploader = () => {
           </div>
         </label>
       )}
-
-      {/* PDF Preview Modal */}
-      <AnimatePresence>
-        {previewOpen && resume && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="glass-panel w-full max-w-4xl h-[85vh] rounded-3xl border border-white/10 overflow-hidden flex flex-col bg-[#0B0F17]"
-            >
-              <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-slate-900/60">
-                <div className="flex items-center space-x-2">
-                  <FileText className="w-5 h-5 text-emerald-400" />
-                  <span className="font-bold text-white text-sm">{resume.fileName}</span>
-                </div>
-                <button
-                  onClick={() => setPreviewOpen(false)}
-                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <iframe
-                src={`http://localhost:5001${resume.fileUrl}`}
-                title="Resume Preview"
-                className="w-full flex-1 bg-white"
-              />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
